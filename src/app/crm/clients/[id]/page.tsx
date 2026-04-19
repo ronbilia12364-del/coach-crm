@@ -8,6 +8,7 @@ import { MessageCircle, Scale, Dumbbell, Utensils, Image } from "lucide-react";
 import ClientStatusBadge from "@/components/crm/ClientStatusBadge";
 import PaymentStatusBadge from "@/components/crm/PaymentStatusBadge";
 import EditClientForm from "@/components/crm/EditClientForm";
+import SubscriptionCard from "@/components/crm/SubscriptionCard";
 import AddPaymentButton from "@/components/crm/AddPaymentButton";
 import ManageNutritionButton from "@/components/crm/ManageNutritionButton";
 import ManageTrainingButton from "@/components/crm/ManageTrainingButton";
@@ -65,6 +66,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
         {/* Client info */}
         <div className="lg:col-span-1 space-y-4">
           <EditClientForm client={client} />
+          <SubscriptionCard client={client} />
 
           {/* Weight summary */}
           {weightLogs && weightLogs.length > 0 && (

@@ -89,6 +89,8 @@ export interface Client {
   weight_goal?: number;
   notes?: string;
   lead_id?: string;
+  frozen_at?: string | null;
+  frozen_days?: number;
   created_at: string;
   updated_at: string;
 }
