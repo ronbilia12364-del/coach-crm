@@ -23,7 +23,7 @@ export default async function PaymentsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold">תשלומים</h2>
+        <h2 className="text-xl md:text-2xl font-bold">תשלומים</h2>
         <p className="text-gray-500 mt-1">ניהול תשלומים מכל המתאמנים</p>
       </div>
 
@@ -31,22 +31,24 @@ export default async function PaymentsPage() {
       <div className="grid grid-cols-2 gap-4">
         <div className="card border-r-4 border-green-500">
           <p className="text-sm text-gray-500">שולם</p>
-          <p className="text-2xl font-bold text-green-600 mt-1">{formatCurrency(totalPaid)}</p>
+          <p className="text-xl md:text-2xl font-bold text-green-600 mt-1">{formatCurrency(totalPaid)}</p>
         </div>
         <div className="card border-r-4 border-red-400">
           <p className="text-sm text-gray-500">לא שולם</p>
-          <p className="text-2xl font-bold text-red-500 mt-1">{formatCurrency(totalUnpaid)}</p>
+          <p className="text-xl md:text-2xl font-bold text-red-500 mt-1">{formatCurrency(totalUnpaid)}</p>
         </div>
       </div>
 
       {/* Unpaid first */}
       <div>
-        <h3 className="font-semibold text-red-600 mb-3">ממתין לתשלום ({payments.filter(p => p.status === 'unpaid').length})</h3>
+        <h3 className="font-semibold text-red-600 mb-3">
+          ממתין לתשלום ({payments.filter((p) => p.status === "unpaid").length})
+        </h3>
         <div className="space-y-2">
-          {payments.filter(p => p.status === 'unpaid').map(payment => (
+          {payments.filter((p) => p.status === "unpaid").map((payment) => (
             <PaymentRow key={payment.id} payment={payment} />
           ))}
-          {payments.filter(p => p.status === 'unpaid').length === 0 && (
+          {payments.filter((p) => p.status === "unpaid").length === 0 && (
             <div className="card text-center text-green-600 font-medium">✅ כל התשלומים שולמו!</div>
           )}
         </div>
@@ -55,7 +57,9 @@ export default async function PaymentsPage() {
       {/* All payments */}
       <div>
         <h3 className="font-semibold text-gray-700 mb-3">כל התשלומים</h3>
-        <div className="card p-0 overflow-hidden">
+
+        {/* Desktop table */}
+        <div className="hidden md:block card p-0 overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b border-gray-100">
               <tr>
@@ -71,14 +75,19 @@ export default async function PaymentsPage() {
               {payments.map((payment) => (
                 <tr key={payment.id} className="hover:bg-gray-50">
                   <td className="px-6 py-3">
-                    <Link href={`/crm/clients/${payment.client?.id}`} className="hover:text-green-600 font-medium">
+                    <Link
+                      href={`/crm/clients/${payment.client?.id}`}
+                      className="hover:text-green-600 font-medium"
+                    >
                       {payment.client?.name}
                     </Link>
                   </td>
                   <td className="px-6 py-3 text-gray-600">{formatDate(payment.month)}</td>
                   <td className="px-6 py-3 font-medium">{formatCurrency(payment.amount)}</td>
                   <td className="px-6 py-3 text-gray-500">
-                    {payment.method ? PAYMENT_METHOD_LABELS[payment.method as keyof typeof PAYMENT_METHOD_LABELS] : "—"}
+                    {payment.method
+                      ? PAYMENT_METHOD_LABELS[payment.method as keyof typeof PAYMENT_METHOD_LABELS]
+                      : "—"}
                   </td>
                   <td className="px-6 py-3">
                     <PaymentStatusBadge status={payment.status} />
@@ -91,6 +100,39 @@ export default async function PaymentsPage() {
             </tbody>
           </table>
         </div>
+
+        {/* Mobile cards */}
+        <div className="md:hidden space-y-3">
+          {payments.map((payment) => (
+            <div key={payment.id} className="card space-y-3">
+              <div className="flex items-start justify-between">
+                <div>
+                  <Link
+                    href={`/crm/clients/${payment.client?.id}`}
+                    className="font-semibold text-base hover:text-green-600"
+                  >
+                    {payment.client?.name}
+                  </Link>
+                  <p className="text-sm text-gray-400 mt-0.5">{formatDate(payment.month)}</p>
+                </div>
+                <PaymentStatusBadge status={payment.status} />
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-gray-500">
+                  {payment.method
+                    ? PAYMENT_METHOD_LABELS[payment.method as keyof typeof PAYMENT_METHOD_LABELS]
+                    : "—"}
+                </div>
+                <span className="font-bold text-base">{formatCurrency(payment.amount)}</span>
+              </div>
+              {payment.status === "unpaid" && (
+                <div className="pt-1">
+                  <MarkPaidButton paymentId={payment.id} />
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -100,7 +142,10 @@ function PaymentRow({ payment }: { payment: Payment & { client: any } }) {
   return (
     <div className="card flex justify-between items-center py-3">
       <div>
-        <Link href={`/crm/clients/${payment.client?.id}`} className="font-medium hover:text-green-600">
+        <Link
+          href={`/crm/clients/${payment.client?.id}`}
+          className="font-medium hover:text-green-600"
+        >
           {payment.client?.name}
         </Link>
         <p className="text-xs text-gray-400">{formatDate(payment.month)}</p>

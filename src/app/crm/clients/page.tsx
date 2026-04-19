@@ -9,7 +9,7 @@ import {
   type ClientStatus,
 } from "@/types";
 import Link from "next/link";
-import { MessageCircle, Plus } from "lucide-react";
+import { MessageCircle } from "lucide-react";
 import ClientStatusBadge from "@/components/crm/ClientStatusBadge";
 import AddClientButton from "@/components/crm/AddClientButton";
 
@@ -44,19 +44,19 @@ export default async function ClientsPage({
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold">מתאמנים</h2>
+          <h2 className="text-xl md:text-2xl font-bold">מתאמנים</h2>
           <p className="text-gray-500 mt-1">{clients.length} מתאמנים</p>
         </div>
         <AddClientButton />
       </div>
 
       {/* Filters */}
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         {statusFilters.map(({ value, label }) => (
           <Link
             key={value}
             href={value ? `/crm/clients?status=${value}` : "/crm/clients"}
-            className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
+            className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-colors ${
               params.status === value || (!params.status && value === "")
                 ? "bg-green-600 text-white"
                 : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
@@ -67,8 +67,8 @@ export default async function ClientsPage({
         ))}
       </div>
 
-      {/* Table */}
-      <div className="card p-0 overflow-hidden">
+      {/* Desktop table */}
+      <div className="hidden md:block card p-0 overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-gray-50 border-b border-gray-100">
             <tr>
@@ -96,9 +96,7 @@ export default async function ClientsPage({
                     </Link>
                   </td>
                   <td className="px-6 py-4 text-gray-600 font-mono text-xs">{client.phone}</td>
-                  <td className="px-6 py-4 text-gray-600">
-                    {PLAN_LABELS[client.plan]}
-                  </td>
+                  <td className="px-6 py-4 text-gray-600">{PLAN_LABELS[client.plan]}</td>
                   <td className="px-6 py-4 text-gray-500">
                     {client.start_date ? formatDate(client.start_date) : "—"}
                   </td>
@@ -126,6 +124,53 @@ export default async function ClientsPage({
             )}
           </tbody>
         </table>
+      </div>
+
+      {/* Mobile cards */}
+      <div className="md:hidden space-y-3">
+        {clients.length === 0 ? (
+          <div className="card text-center py-10 text-gray-400">אין מתאמנים עדיין</div>
+        ) : (
+          clients.map((client) => (
+            <div key={client.id} className="card space-y-3">
+              <div className="flex items-start justify-between">
+                <div>
+                  <Link
+                    href={`/crm/clients/${client.id}`}
+                    className="font-semibold text-base hover:text-green-600"
+                  >
+                    {client.name}
+                  </Link>
+                  <p className="text-sm text-gray-500 font-mono mt-0.5">{client.phone}</p>
+                </div>
+                <ClientStatusBadge status={client.status} />
+              </div>
+              <div className="flex gap-4 text-sm text-gray-600">
+                <span>{PLAN_LABELS[client.plan]}</span>
+                {client.start_date && (
+                  <span className="text-gray-400">{formatDate(client.start_date)}</span>
+                )}
+              </div>
+              <div className="flex gap-2 pt-1">
+                <Link
+                  href={`/crm/clients/${client.id}`}
+                  className="flex-1 text-center btn-secondary text-sm py-2.5"
+                >
+                  פרטים
+                </Link>
+                <a
+                  href={buildWhatsAppUrl(client.phone)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-1.5 px-4 py-2.5 bg-green-50 hover:bg-green-100 text-green-600 rounded-xl transition-colors text-sm font-medium"
+                >
+                  <MessageCircle size={16} />
+                  WhatsApp
+                </a>
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );
