@@ -18,7 +18,7 @@ export async function addLead(formData: FormData) {
   });
 
   if (!error) {
-    const message = `היי ${name}! ראיתי שהשארת פרטים 💪 תרצה לקבוע שיחה קצרה של 15 דקות לראות איך אני יכול לעזור לך להגיע ליעד?`;
+    const message = `היי ${name}! ראיתי שהשארת פרטים 💪 מתי זמין לקבוע שיחה קצרה של 15 דקות לראות איך אני יכול לעזור לך להגיע ליעד?`;
     await sendWhatsAppMessage(phone, message);
   }
 

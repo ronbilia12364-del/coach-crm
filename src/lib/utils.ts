@@ -39,5 +39,5 @@ export function buildWhatsAppUrl(phone: string, message?: string) {
 }
 
 export function buildLeadWhatsAppMessage(name: string) {
-  return `היי ${name}! ראיתי שהשארת פרטים 💪 תרצה לקבוע שיחה קצרה של 15 דקות לראות איך אני יכול לעזור לך להגיע ליעד?`;
+  return `היי ${name}! ראיתי שהשארת פרטים 💪 מתי זמין לקבוע שיחה קצרה של 15 דקות לראות איך אני יכול לעזור לך להגיע ליעד?`;
 }
