@@ -21,33 +21,47 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
-  const changes = body?.entry?.[0]?.changes ?? [];
+  const entries: unknown[] = body?.entry ?? [];
 
-  for (const change of changes) {
-    if (change.field !== "leadgen") continue;
-    const leadgenId = change.value?.leadgen_id as string | undefined;
-    if (!leadgenId) continue;
+  for (const entry of entries) {
+    const changes = (entry as { changes?: unknown[] })?.changes ?? [];
 
-    try {
-      const leadData = await fetchLeadData(leadgenId);
-      if (!leadData) continue;
+    for (const change of changes) {
+      const c = change as { field?: string; value?: { leadgen_id?: string } };
+      if (c.field !== "leadgen") continue;
 
-      const { name, phone } = leadData;
-      const supabase = createAdminClient();
-      const { error } = await supabase.from("leads").insert({
-        name,
-        phone,
-        source: "facebook",
-        status: "new",
-        notes: "ליד מ-Facebook Lead Ads (leadgen_id: " + leadgenId + ")",
-      });
+      const leadgenId = c.value?.leadgen_id;
+      if (!leadgenId) continue;
 
-      if (!error) {
-        const message = "היי " + name + "! ראיתי שהשארת פרטים 💪 מתי זמין לקבוע שיחה קצרה של 15 דקות?";
-        await sendWhatsAppMessage(phone, message);
+      try {
+        const leadData = await fetchLeadData(leadgenId);
+        if (!leadData) {
+          console.error(`[FB Webhook] fetchLeadData returned null for leadgen_id=${leadgenId}`);
+          continue;
+        }
+
+        const { name, phone } = leadData;
+        const supabase = createAdminClient();
+        const { error } = await supabase.from("leads").insert({
+          name,
+          phone: phone || null,
+          source: "facebook",
+          status: "new",
+          notes: `ליד מ-Facebook Lead Ads (leadgen_id: ${leadgenId})`,
+        });
+
+        if (error) {
+          console.error("[FB Webhook] Supabase insert error:", error);
+          continue;
+        }
+
+        if (phone) {
+          const message = `היי ${name}! ראיתי שהשארת פרטים 💪 מתי זמין לקבוע שיחה קצרה של 15 דקות לראות איך אני יכול לעזור לך להגיע ליעד?`;
+          await sendWhatsAppMessage(phone, message);
+        }
+      } catch (err) {
+        console.error("[FB Webhook] Error:", err);
       }
-    } catch (err) {
-      console.error("[FB Webhook] Error:", err);
     }
   }
   return NextResponse.json({ ok: true });
@@ -73,17 +87,20 @@ async function fetchLeadData(leadgenId: string): Promise<{ name: string; phone: 
   type Field = { name: string; values: string[] };
   const fields: Field[] = data.field_data ?? [];
 
-  let name = "";
-  let phone = "";
-  for (const f of fields) {
-    if (f.name === "full_name" || f.name === "first_name" || f.name === "name") {
-      name = f.values[0] ?? "";
-    }
-    if (f.name === "phone_number" || f.name === "phone") {
-      phone = f.values[0] ?? "";
-    }
+  const get = (keys: string[]) =>
+    fields.find((f) => keys.includes(f.name))?.values?.[0] ?? "";
+
+  const firstName = get(["first_name"]);
+  const lastName = get(["last_name"]);
+  const fullName = get(["full_name", "name"]);
+  const name = fullName || [firstName, lastName].filter(Boolean).join(" ");
+
+  const phone = get(["phone_number", "phone", "mobile_phone", "phone_number_mobile"]);
+
+  if (!name) {
+    console.error("[FB Webhook] Lead has no name. field_data:", JSON.stringify(fields));
+    return null;
   }
 
-  if (!name || !phone) return null;
   return { name, phone };
 }
