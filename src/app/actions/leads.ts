@@ -2,16 +2,26 @@
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
+import { sendWhatsAppMessage } from "@/lib/whatsapp";
 
 export async function addLead(formData: FormData) {
   const supabase = createAdminClient();
+  const name = formData.get("name") as string;
+  const phone = formData.get("phone") as string;
+
   const { error } = await supabase.from("leads").insert({
-    name: formData.get("name"),
-    phone: formData.get("phone"),
+    name,
+    phone,
     source: formData.get("source"),
     notes: formData.get("notes") || null,
     status: "new",
   });
+
+  if (!error) {
+    const message = `היי ${name}! ראיתי שהשארת פרטים 💪 תרצה לקבוע שיחה קצרה של 15 דקות לראות איך אני יכול לעזור לך להגיע ליעד?`;
+    await sendWhatsAppMessage(phone, message);
+  }
+
   revalidatePath("/crm/leads");
   return { error: error?.message ?? null };
 }
