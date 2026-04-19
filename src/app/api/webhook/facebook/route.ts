@@ -7,7 +7,6 @@ export async function GET(req: NextRequest) {
   const mode = searchParams.get("hub.mode");
   const token = searchParams.get("hub.verify_token");
   const challenge = searchParams.get("hub.challenge");
-  console.log("[FB Webhook GET]", { mode, tokenMatch: token === process.env.FACEBOOK_VERIFY_TOKEN });
   if (mode === "subscribe" && token === process.env.FACEBOOK_VERIFY_TOKEN) {
     return new NextResponse(challenge, { status: 200 });
   }
@@ -16,7 +15,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  console.log("[FB Webhook POST] body:", JSON.stringify(body));
+  console.log("[FB Webhook] Received:", JSON.stringify(body));
 
   if (body?.object !== "page") {
     return NextResponse.json({ ok: true });
@@ -26,14 +25,11 @@ export async function POST(req: NextRequest) {
 
   for (const change of changes) {
     if (change.field !== "leadgen") continue;
-
     const leadgenId = change.value?.leadgen_id as string | undefined;
-    console.log("[FB Webhook] Leadgen ID:", leadgenId);
     if (!leadgenId) continue;
 
     try {
       const leadData = await fetchLeadData(leadgenId);
-      console.log("[FB Webhook] Lead data:", leadData);
       if (!leadData) continue;
 
       const { name, phone } = leadData;
@@ -43,13 +39,11 @@ export async function POST(req: NextRequest) {
         phone,
         source: "facebook",
         status: "new",
-        notes: `ליד מ-Facebook Lead Ads (leadgen_id: ${leadgenId})`,
+        notes: "ליד מ-Facebook Lead Ads (leadgen_id: " + leadgenId + ")",
       });
 
-      if (error) {
-        console.error("[FB Webhook] Supabase error:", error);
-      } else {
-        const message = `היי ${name}! ראיתי שהשארת פרטים 💪 מתי זמין לקבוע שיחה קצרה של 15 דקות לראות איך אני יכול לעזור לך להגיע ליעד?`;
+      if (!error) {
+        const message = "היי " + name + "! ראיתי שהשארת פרטים 💪 מתי זמין לקבוע שיחה קצרה של 15 דקות?";
         await sendWhatsAppMessage(phone, message);
       }
     } catch (err) {
@@ -61,11 +55,9 @@ export async function POST(req: NextRequest) {
 
 async function fetchLeadData(leadgenId: string): Promise<{ name: string; phone: string } | null> {
   const token = process.env.FACEBOOK_PAGE_ACCESS_TOKEN;
-  if (!token) {
-    console.error("[FB Webhook] No token!");
-    return null;
-  }
-  const url = `https://graph.facebook.com/v20.0/${leadgenId}?access_token=${token}`;
+  if (!token) return null;
+
+  const url = "https://graph.facebook.com/v20.0/" + leadgenId + "?access_token=" + token;
   const res = await fetch(url);
   console.log("[FB Webhook] FB API status:", res.status);
 
@@ -78,6 +70,20 @@ async function fetchLeadData(leadgenId: string): Promise<{ name: string; phone: 
   const data = await res.json();
   console.log("[FB Webhook] FB API data:", JSON.stringify(data));
 
-  const fields: { name: string; values: string[] }[] = data.field_data ?? [];
-  const get = (keys: string[]) =>
-    fields.find((f) => keys.includes(f.name))?.values
+  type Field = { name: string; values: string[] };
+  const fields: Field[] = data.field_data ?? [];
+
+  let name = "";
+  let phone = "";
+  for (const f of fields) {
+    if (f.name === "full_name" || f.name === "first_name" || f.name === "name") {
+      name = f.values[0] ?? "";
+    }
+    if (f.name === "phone_number" || f.name === "phone") {
+      phone = f.values[0] ?? "";
+    }
+  }
+
+  if (!name || !phone) return null;
+  return { name, phone };
+}
