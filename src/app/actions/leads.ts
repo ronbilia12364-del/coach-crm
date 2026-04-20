@@ -33,6 +33,13 @@ export async function updateLeadStatus(id: string, status: string) {
   return { error: error?.message ?? null };
 }
 
+export async function deleteLead(id: string) {
+  const supabase = createAdminClient();
+  const { error } = await supabase.from("leads").delete().eq("id", id);
+  revalidatePath("/crm/leads");
+  return { error: error?.message ?? null };
+}
+
 export async function convertLead(leadId: string, formData: FormData) {
   const supabase = createAdminClient();
 
