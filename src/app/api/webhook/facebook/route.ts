@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { sendWhatsAppMessage } from "@/lib/whatsapp";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -55,19 +54,7 @@ export async function POST(req: NextRequest) {
           continue;
         }
 
-        if (phone) {
-          const message = `היי ${name}! ראיתי שהשארת פרטים 💪 מתי זמין לקבוע שיחה קצרה של 15 דקות לראות איך אני יכול לעזור לך להגיע ליעד?`;
-          const whatsappSent = await sendWhatsAppMessage(phone, message);
-          console.log("[FB Webhook] WhatsApp sent:", whatsappSent);
-
-          if (whatsappSent) {
-            const { error: statusError } = await supabase
-              .from("leads")
-              .update({ status: "messaged" })
-              .eq("phone", phone);
-            console.log("[FB Webhook] Lead status updated to messaged:", !statusError, statusError?.message ?? "");
-          }
-        }
+        console.log("[FB Webhook] Lead saved, awaiting manual WhatsApp send");
       } catch (err) {
         console.error("[FB Webhook] Error:", err);
       }

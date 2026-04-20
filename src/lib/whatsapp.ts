@@ -8,6 +8,7 @@ function toInternationalPhone(phone: string): string {
   return digits;
 }
 
+// NOTE: Not currently in use — requires WhatsApp Business API (not regular WhatsApp Business app)
 export async function sendWhatsAppMessage(phone: string, message: string): Promise<boolean> {
   const token = process.env.WHATSAPP_TOKEN;
   if (!token) {
