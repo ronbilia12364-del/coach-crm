@@ -90,15 +90,16 @@ async function fetchLeadData(leadgenId: string): Promise<{ name: string; phone: 
   const get = (keys: string[]) =>
     fields.find((f) => keys.includes(f.name))?.values?.[0] ?? "";
 
-  const firstName = get(["first_name"]);
-  const lastName = get(["last_name"]);
-  const fullName = get(["full_name", "name"]);
-  const name = fullName || [firstName, lastName].filter(Boolean).join(" ");
+  const firstName = get(["first_name", "שם_פרטי", "שם פרטי", "שם-פרטי"]);
+  const lastName = get(["last_name", "שם_משפחה", "שם משפחה", "שם-משפחה"]);
+  const fullName = get(["full_name", "name", "name_full", "שם_מלא", "שם מלא", "שם-מלא", "שם"]);
+  const name = fullName || [firstName, lastName].filter(Boolean).join(" ") || firstName;
 
-  const phone = get(["phone_number", "phone", "mobile_phone", "phone_number_mobile"]);
+  const phone = get(["phone_number", "phone", "mobile_phone", "phone_number_mobile", "phone_mobile", "מספר_טלפון", "מספר טלפון", "מספר-טלפון", "טלפון"]);
 
   if (!name) {
-    console.error("[FB Webhook] Lead has no name. field_data:", JSON.stringify(fields));
+    const fieldNames = fields.map((f) => f.name).join(", ");
+    console.error(`[FB Webhook] Lead has no name. Fields in form: [${fieldNames}]`);
     return null;
   }
 
