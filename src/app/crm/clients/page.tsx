@@ -12,6 +12,7 @@ import Link from "next/link";
 import { MessageCircle } from "lucide-react";
 import ClientStatusBadge from "@/components/crm/ClientStatusBadge";
 import AddClientButton from "@/components/crm/AddClientButton";
+import DeleteButton from "@/components/ui/delete-button";
 
 async function getClients(status?: string) {
   const supabase = createAdminClient();
@@ -117,6 +118,12 @@ export default async function ClientsPage({
                       >
                         <MessageCircle size={16} />
                       </a>
+                      <DeleteButton
+                        itemId={client.id}
+                        tableName="clients"
+                        itemLabel={client.name}
+                        cascadeNote="פעולה זו תמחק גם את כל השיחות והתשלומים הקשורים למתאמן זה."
+                      />
                     </div>
                   </td>
                 </tr>
@@ -167,6 +174,12 @@ export default async function ClientsPage({
                   <MessageCircle size={16} />
                   WhatsApp
                 </a>
+                <DeleteButton
+                  itemId={client.id}
+                  tableName="clients"
+                  itemLabel={client.name}
+                  cascadeNote="פעולה זו תמחק גם את כל השיחות והתשלומים הקשורים למתאמן זה."
+                />
               </div>
             </div>
           ))

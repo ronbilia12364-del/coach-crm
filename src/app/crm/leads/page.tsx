@@ -7,7 +7,7 @@ import { MessageCircle, UserCheck } from "lucide-react";
 import AddLeadButton from "@/components/crm/AddLeadButton";
 import LeadStatusSelect from "@/components/crm/LeadStatusSelect";
 import ConvertLeadButton from "@/components/crm/ConvertLeadButton";
-import DeleteLeadButton from "@/components/crm/DeleteLeadButton";
+import DeleteButton from "@/components/ui/delete-button";
 import Link from "next/link";
 
 const STATUS_COLORS: Record<LeadStatus, string> = {
@@ -79,7 +79,7 @@ function LeadCard({ lead }: { lead: Lead }) {
         </div>
         <div className="flex items-center gap-1">
           <span className="text-base">{sourceIcon}</span>
-          <DeleteLeadButton leadId={lead.id} leadName={lead.name} />
+          <DeleteButton itemId={lead.id} tableName="leads" itemLabel={lead.name} />
         </div>
       </div>
       {lead.notes && <p className="text-xs text-gray-500 bg-gray-50 rounded-lg p-2">{lead.notes}</p>}

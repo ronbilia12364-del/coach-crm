@@ -6,6 +6,7 @@ import { CALL_TYPE_LABELS, type Call, type CallType } from "@/types";
 import { CheckCircle2, Circle } from "lucide-react";
 import AddCallButton from "@/components/crm/AddCallButton";
 import CompleteCallButton from "@/components/crm/CompleteCallButton";
+import DeleteButton from "@/components/ui/delete-button";
 
 export default async function CallsPage() {
   const supabase = createAdminClient();
@@ -118,6 +119,11 @@ function CallRow({
           </a>
         )}
         {!call.completed && <CompleteCallButton callId={call.id} />}
+        <DeleteButton
+          itemId={call.id}
+          tableName="calls"
+          itemLabel={`שיחה עם ${person?.name ?? "לא ידוע"}`}
+        />
       </div>
     </div>
   );

@@ -5,6 +5,7 @@ import { formatCurrency, formatDate } from "@/lib/utils";
 import { PAYMENT_METHOD_LABELS, type Payment, type PaymentStatus } from "@/types";
 import PaymentStatusBadge from "@/components/crm/PaymentStatusBadge";
 import MarkPaidButton from "@/components/crm/MarkPaidButton";
+import DeleteButton from "@/components/ui/delete-button";
 import Link from "next/link";
 
 export default async function PaymentsPage() {
@@ -93,7 +94,14 @@ export default async function PaymentsPage() {
                     <PaymentStatusBadge status={payment.status} />
                   </td>
                   <td className="px-6 py-3">
-                    {payment.status === "unpaid" && <MarkPaidButton paymentId={payment.id} />}
+                    <div className="flex items-center gap-2">
+                      {payment.status === "unpaid" && <MarkPaidButton paymentId={payment.id} />}
+                      <DeleteButton
+                        itemId={payment.id}
+                        tableName="payments"
+                        itemLabel={`תשלום של ${payment.client?.name}`}
+                      />
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -125,11 +133,14 @@ export default async function PaymentsPage() {
                 </div>
                 <span className="font-bold text-base">{formatCurrency(payment.amount)}</span>
               </div>
-              {payment.status === "unpaid" && (
-                <div className="pt-1">
-                  <MarkPaidButton paymentId={payment.id} />
-                </div>
-              )}
+              <div className="flex items-center gap-2 pt-1">
+                {payment.status === "unpaid" && <MarkPaidButton paymentId={payment.id} />}
+                <DeleteButton
+                  itemId={payment.id}
+                  tableName="payments"
+                  itemLabel={`תשלום של ${payment.client?.name}`}
+                />
+              </div>
             </div>
           ))}
         </div>
@@ -150,9 +161,14 @@ function PaymentRow({ payment }: { payment: Payment & { client: any } }) {
         </Link>
         <p className="text-xs text-gray-400">{formatDate(payment.month)}</p>
       </div>
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2">
         <span className="font-bold">{formatCurrency(payment.amount)}</span>
         <MarkPaidButton paymentId={payment.id} />
+        <DeleteButton
+          itemId={payment.id}
+          tableName="payments"
+          itemLabel={`תשלום של ${payment.client?.name}`}
+        />
       </div>
     </div>
   );
