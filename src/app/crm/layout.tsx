@@ -4,7 +4,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { LayoutDashboard, Users, UserPlus, Phone, CreditCard, Menu, X } from "lucide-react";
+import { Toaster } from "sonner";
 import { cn } from "@/lib/utils";
+import NewLeadNotifier from "@/components/crm/NewLeadNotifier";
 
 const navItems = [
   { href: "/crm", label: "דשבורד", icon: LayoutDashboard },
@@ -106,6 +108,9 @@ export default function CRMLayout({ children }: { children: React.ReactNode }) {
 
         <div className="p-4 md:p-8">{children}</div>
       </main>
+
+      <NewLeadNotifier />
+      <Toaster position="top-right" richColors />
     </div>
   );
 }
