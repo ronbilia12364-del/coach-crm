@@ -57,7 +57,16 @@ export async function POST(req: NextRequest) {
 
         if (phone) {
           const message = `היי ${name}! ראיתי שהשארת פרטים 💪 מתי זמין לקבוע שיחה קצרה של 15 דקות לראות איך אני יכול לעזור לך להגיע ליעד?`;
-          await sendWhatsAppMessage(phone, message);
+          const whatsappSent = await sendWhatsAppMessage(phone, message);
+          console.log("[FB Webhook] WhatsApp sent:", whatsappSent);
+
+          if (whatsappSent) {
+            const { error: statusError } = await supabase
+              .from("leads")
+              .update({ status: "messaged" })
+              .eq("phone", phone);
+            console.log("[FB Webhook] Lead status updated to messaged:", !statusError, statusError?.message ?? "");
+          }
         }
       } catch (err) {
         console.error("[FB Webhook] Error:", err);

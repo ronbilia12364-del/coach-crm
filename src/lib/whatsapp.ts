@@ -8,13 +8,17 @@ function toInternationalPhone(phone: string): string {
   return digits;
 }
 
-export async function sendWhatsAppMessage(phone: string, message: string): Promise<void> {
+export async function sendWhatsAppMessage(phone: string, message: string): Promise<boolean> {
   const token = process.env.WHATSAPP_TOKEN;
-  if (!token) return;
+  if (!token) {
+    console.error("[WhatsApp] No token configured");
+    return false;
+  }
 
   const to = toInternationalPhone(phone);
+  console.log("[WhatsApp] Sending to:", phone, "→", to);
 
-  await fetch(API_URL, {
+  const res = await fetch(API_URL, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -27,4 +31,14 @@ export async function sendWhatsAppMessage(phone: string, message: string): Promi
       text: { body: message },
     }),
   });
+
+  console.log("[WhatsApp] Response status:", res.status);
+
+  if (!res.ok) {
+    const body = await res.text();
+    console.error("[WhatsApp] Error response:", body);
+    return false;
+  }
+
+  return true;
 }
