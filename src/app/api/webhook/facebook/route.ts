@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { sendPushToAll } from "@/lib/push/send";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -56,7 +57,12 @@ export async function POST(req: NextRequest) {
           continue;
         }
 
-        console.log("[FB Webhook] Lead saved, awaiting manual WhatsApp send");
+        console.log("[FB Webhook] Lead saved, sending push notification");
+        sendPushToAll({
+          title: "🎯 ליד חדש!",
+          body: `${name}${phone ? " — " + phone : ""}`,
+          url: "/crm/leads",
+        }).catch((e) => console.error("[FB Webhook] Push error:", e));
       } catch (err) {
         console.error("[FB Webhook] Error:", err);
       }

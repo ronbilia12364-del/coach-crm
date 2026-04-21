@@ -39,10 +39,10 @@ export function buildWhatsAppUrl(phone: string, message?: string) {
   return message ? `${base}?text=${encodeURIComponent(message)}` : base;
 }
 
-export function computeEndDate(client: Pick<Client, "start_date" | "plan" | "frozen_at" | "frozen_days">): Date | null {
+export function computeEndDate(client: Pick<Client, "start_date" | "plan" | "frozen_at" | "frozen_days" | "total_months">): Date | null {
   if (!client.start_date) return null;
 
-  const months = PLAN_PRICES[client.plan as keyof typeof PLAN_PRICES]?.months ?? 1;
+  const months = client.total_months ?? PLAN_PRICES[client.plan as keyof typeof PLAN_PRICES]?.months ?? 1;
   const end = new Date(client.start_date);
   end.setMonth(end.getMonth() + months);
 

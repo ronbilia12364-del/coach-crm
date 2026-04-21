@@ -22,3 +22,24 @@ ADD COLUMN IF NOT EXISTS monthly_amount NUMERIC(10,2);
 ```
 
 > **Note:** `start_date` already exists on `clients`. No need to add it again.
+
+---
+
+## 2026-04-21 — Push Notifications subscriptions table
+
+```sql
+CREATE TABLE IF NOT EXISTS public.push_subscriptions (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  endpoint TEXT UNIQUE NOT NULL,
+  p256dh TEXT NOT NULL,
+  auth TEXT NOT NULL,
+  user_agent TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  last_used_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.push_subscriptions ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Allow all on push_subscriptions"
+  ON public.push_subscriptions FOR ALL USING (true) WITH CHECK (true);
+```

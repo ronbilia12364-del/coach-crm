@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { LayoutDashboard, Users, UserPlus, Phone, CreditCard, Send, Menu, X } from "lucide-react";
+import { LayoutDashboard, Users, UserPlus, Phone, CreditCard, Send, Bell, Menu, X } from "lucide-react";
 import { Toaster } from "sonner";
 import { cn } from "@/lib/utils";
 import NewLeadNotifier from "@/components/crm/NewLeadNotifier";
@@ -15,6 +15,7 @@ const navItems = [
   { href: "/crm/calls", label: "שיחות", icon: Phone },
   { href: "/crm/payments", label: "תשלומים", icon: CreditCard },
   { href: "/crm/broadcast", label: "שליחה מרוכזת", icon: Send },
+  { href: "/crm/settings/notifications", label: "הגדרות התראות", icon: Bell },
 ];
 
 export default function CRMLayout({ children }: { children: React.ReactNode }) {
