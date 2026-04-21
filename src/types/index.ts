@@ -201,3 +201,35 @@ export interface DashboardStats {
   unpaidPayments: number;
   revenueByPlan: Record<ClientPlan, number>;
 }
+
+// ─── Broadcast ────────────────────────────────────────────────────────────────
+
+export interface MessageTemplate {
+  id: string;
+  name: string;
+  content: string;
+  is_default: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export type BroadcastStatus = "sent" | "skipped" | "failed";
+export type RecipientType = "client" | "lead";
+
+export interface BroadcastRecipient {
+  id: string;
+  name: string;
+  phone: string;
+  type: RecipientType;
+  status?: string;
+  plan?: string;
+}
+
+export interface RecipientFilters {
+  includeClients: boolean;
+  includeLeads: boolean;
+  clientStatuses: string[];
+  clientPlans: string[];
+  leadStatuses: string[];
+  excludeRecent: boolean;
+}
