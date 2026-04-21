@@ -69,20 +69,34 @@ export default async function LeadsPage() {
 function LeadCard({ lead }: { lead: Lead }) {
   const waUrl = buildWhatsAppUrl(lead.phone, buildLeadWhatsAppMessage(lead.name));
   const sourceIcon = lead.source === "instagram" ? "📸" : "👥";
+  const isMinor = lead.age != null && lead.age > 0 && lead.age <= 18;
 
   return (
-    <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 space-y-3">
+    <div className={`rounded-xl p-4 shadow-sm space-y-3 ${
+      isMinor
+        ? "bg-red-50 border-4 border-red-500"
+        : "bg-white border border-gray-100"
+    }`}>
       <div className="flex justify-between items-start">
         <div>
-          <p className="font-medium text-sm">{lead.name}</p>
-          <p className="text-xs text-gray-400 font-mono">{lead.phone}</p>
+          <p className="font-medium text-sm">
+            {lead.name}
+            {lead.age != null && lead.age > 0 && (
+              <span className="text-gray-400 font-normal mr-1">({lead.age})</span>
+            )}
+          </p>
+          {lead.goal && (
+            <p className="text-xs text-gray-500 mt-0.5">🎯 {lead.goal}</p>
+          )}
+          <p className="text-xs text-gray-400 font-mono mt-0.5">{lead.phone}</p>
         </div>
         <div className="flex items-center gap-1">
+          {isMinor && <span className="text-xs font-bold text-red-600">⚠️ קטין</span>}
           <span className="text-base">{sourceIcon}</span>
           <DeleteButton itemId={lead.id} tableName="leads" itemLabel={lead.name} />
         </div>
       </div>
-      {lead.notes && <p className="text-xs text-gray-500 bg-gray-50 rounded-lg p-2">{lead.notes}</p>}
+      {lead.notes && <p className="text-xs text-gray-500 bg-gray-100/60 rounded-lg p-2">{lead.notes}</p>}
       <p className="text-xs text-gray-400">{formatDate(lead.created_at)}</p>
       <div className="flex gap-2">
         <LeadStatusSelect leadId={lead.id} currentStatus={lead.status as LeadStatus} />

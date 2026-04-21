@@ -39,13 +39,15 @@ export async function POST(req: NextRequest) {
           continue;
         }
 
-        const { name, phone } = leadData;
+        const { name, phone, age, goal } = leadData;
         const supabase = createAdminClient();
         const { error } = await supabase.from("leads").insert({
           name,
           phone: phone || null,
           source: "facebook",
           status: "new",
+          age: age ?? null,
+          goal: goal || null,
           notes: `ליד מ-Facebook Lead Ads (leadgen_id: ${leadgenId})`,
         });
 
@@ -63,7 +65,7 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ ok: true });
 }
 
-async function fetchLeadData(leadgenId: string): Promise<{ name: string; phone: string } | null> {
+async function fetchLeadData(leadgenId: string): Promise<{ name: string; phone: string; age: number | null; goal: string | null } | null> {
   const token = process.env.FACEBOOK_PAGE_ACCESS_TOKEN;
   if (!token) return null;
 
@@ -93,11 +95,17 @@ async function fetchLeadData(leadgenId: string): Promise<{ name: string; phone: 
 
   const phone = get(["phone_number", "phone", "mobile_phone", "phone_number_mobile", "phone_mobile", "מספר_טלפון", "מספר טלפון", "מספר-טלפון", "טלפון"]);
 
+  const ageRaw = get(["age", "גיל", "בן_כמה_את", "בן_כמה_אתה", "כמה_אתה", "כמה_את"]);
+  const ageNum = parseInt(ageRaw, 10);
+  const age = !isNaN(ageNum) && ageNum > 0 ? ageNum : null;
+
+  const goal = get(["goal", "מטרה", "מה_המטרה_שלך", "המטרה_שלך", "איזה_מטרה"]) || null;
+
   if (!name) {
     const fieldNames = fields.map((f) => f.name).join(", ");
     console.error(`[FB Webhook] Lead has no name. Fields in form: [${fieldNames}]`);
     return null;
   }
 
-  return { name, phone };
+  return { name, phone, age, goal };
 }

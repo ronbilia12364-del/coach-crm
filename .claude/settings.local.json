@@ -9,7 +9,9 @@
       "Bash(git branch *)",
       "Bash(git remote *)",
       "Bash(git push *)",
-      "Bash(git config *)"
+      "Bash(git config *)",
+      "Bash(npm install *)",
+      "Bash(claude --continue)"
     ]
   }
 }

@@ -16,10 +16,14 @@ export const PLAN_PRICES: Record<ClientPlan, { label: string; price: number; mon
 };
 
 export const PLAN_LABELS: Record<ClientPlan, string> = {
-  trial: "חודש ניסיון – ₪197",
-  "4months": "4 חודשים – ₪550/חודש",
-  "10months": "10 חודשים – ₪400/חודש",
+  trial: "חודש ניסיון",
+  "4months": "4 חודשים",
+  "10months": "10 חודשים",
 };
+
+export function getPlanLabel(plan: string): string {
+  return (PLAN_LABELS as Record<string, string>)[plan] ?? plan;
+}
 
 export const STATUS_LABELS: Record<ClientStatus, string> = {
   active: "פעיל",
@@ -74,6 +78,8 @@ export interface Lead {
   source: LeadSource;
   status: LeadStatus;
   notes?: string;
+  age?: number | null;
+  goal?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -83,7 +89,7 @@ export interface Client {
   name: string;
   phone: string;
   email?: string;
-  plan: ClientPlan;
+  plan: string;
   status: ClientStatus;
   start_date?: string;
   weight_goal?: number;
@@ -91,6 +97,8 @@ export interface Client {
   lead_id?: string;
   frozen_at?: string | null;
   frozen_days?: number;
+  total_months?: number | null;
+  monthly_amount?: number | null;
   created_at: string;
   updated_at: string;
 }

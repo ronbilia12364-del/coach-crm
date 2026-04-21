@@ -4,7 +4,7 @@ export const dynamic = "force-dynamic";
 import { buildWhatsAppUrl, formatDate } from "@/lib/utils";
 import {
   STATUS_LABELS,
-  PLAN_LABELS,
+  getPlanLabel,
   type Client,
   type ClientStatus,
 } from "@/types";
@@ -97,7 +97,7 @@ export default async function ClientsPage({
                     </Link>
                   </td>
                   <td className="px-6 py-4 text-gray-600 font-mono text-xs">{client.phone}</td>
-                  <td className="px-6 py-4 text-gray-600">{PLAN_LABELS[client.plan]}</td>
+                  <td className="px-6 py-4 text-gray-600">{getPlanLabel(client.plan)}</td>
                   <td className="px-6 py-4 text-gray-500">
                     {client.start_date ? formatDate(client.start_date) : "—"}
                   </td>
@@ -153,7 +153,7 @@ export default async function ClientsPage({
                 <ClientStatusBadge status={client.status} />
               </div>
               <div className="flex gap-4 text-sm text-gray-600">
-                <span>{PLAN_LABELS[client.plan]}</span>
+                <span>{getPlanLabel(client.plan)}</span>
                 {client.start_date && (
                   <span className="text-gray-400">{formatDate(client.start_date)}</span>
                 )}

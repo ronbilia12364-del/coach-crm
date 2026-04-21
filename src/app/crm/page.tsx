@@ -2,7 +2,7 @@ import { createAdminClient as createClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
 import { formatCurrency } from "@/lib/utils";
-import { PLAN_PRICES } from "@/types";
+import { PLAN_PRICES, type Payment } from "@/types";
 import { Users, TrendingUp, UserPlus, AlertCircle } from "lucide-react";
 import Link from "next/link";
 
@@ -32,7 +32,8 @@ async function getDashboardStats() {
 
   const revenueByPlan: Record<string, number> = { trial: 0, "4months": 0, "10months": 0 };
   clients?.forEach((c) => {
-    revenueByPlan[c.plan] = (revenueByPlan[c.plan] || 0) + PLAN_PRICES[c.plan as keyof typeof PLAN_PRICES].price;
+    const price = PLAN_PRICES[c.plan as keyof typeof PLAN_PRICES]?.price ?? 0;
+    revenueByPlan[c.plan] = (revenueByPlan[c.plan] || 0) + price;
   });
 
   return {
@@ -42,6 +43,20 @@ async function getDashboardStats() {
     unpaidPayments: unpaidCount ?? 0,
     revenueByPlan,
   };
+}
+
+async function getMonthlyPayments() {
+  const supabase = createClient();
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
+  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split("T")[0];
+  const { data } = await supabase
+    .from("payments")
+    .select("id, amount, status, month, client:clients(id, name)")
+    .gte("month", monthStart)
+    .lte("month", monthEnd)
+    .order("status", { ascending: true });
+  return (data ?? []) as unknown as (Payment & { client: { id: string; name: string } | null })[];
 }
 
 async function getUpcomingCalls() {
@@ -56,8 +71,14 @@ async function getUpcomingCalls() {
   return data ?? [];
 }
 
+const HEBREW_MONTHS = ["ינואר","פברואר","מרץ","אפריל","מאי","יוני","יולי","אוגוסט","ספטמבר","אוקטובר","נובמבר","דצמבר"];
+
 export default async function DashboardPage() {
-  const [stats, upcomingCalls] = await Promise.all([getDashboardStats(), getUpcomingCalls()]);
+  const [stats, upcomingCalls, monthlyPayments] = await Promise.all([
+    getDashboardStats(),
+    getUpcomingCalls(),
+    getMonthlyPayments(),
+  ]);
 
   const statCards = [
     {
@@ -117,6 +138,53 @@ export default async function DashboardPage() {
           </Link>
         ))}
       </div>
+
+      {/* Monthly payments */}
+      {(() => {
+        const now = new Date();
+        const monthLabel = `${HEBREW_MONTHS[now.getMonth()]} ${now.getFullYear()}`;
+        const totalExpected = monthlyPayments.reduce((s, p) => s + p.amount, 0);
+        const totalCollected = monthlyPayments.filter((p) => p.status === "paid").reduce((s, p) => s + p.amount, 0);
+        return (
+          <div className="card">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-gray-900">תשלומים החודש — {monthLabel}</h3>
+              <Link href="/crm/payments" className="text-sm text-green-600 hover:underline">כל התשלומים</Link>
+            </div>
+            {monthlyPayments.length === 0 ? (
+              <p className="text-sm text-gray-400 text-center py-3">אין תשלומים לחודש זה</p>
+            ) : (
+              <div className="space-y-2 mb-4">
+                {monthlyPayments.map((p) => (
+                  <div key={p.id} className="flex items-center justify-between text-sm">
+                    <Link href={`/crm/clients/${p.client?.id}`} className="font-medium hover:text-green-600">
+                      {p.client?.name ?? "—"}
+                    </Link>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{formatCurrency(p.amount)}</span>
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                        p.status === "paid"
+                          ? "bg-green-100 text-green-700"
+                          : "bg-red-100 text-red-600"
+                      }`}>
+                        {p.status === "paid" ? "שולם" : "לא שולם"}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="border-t pt-3 flex justify-between text-sm">
+              <span className="text-gray-500">נגבה / צפוי</span>
+              <span className="font-bold">
+                <span className="text-green-600">{formatCurrency(totalCollected)}</span>
+                <span className="text-gray-400 mx-1">/</span>
+                <span>{formatCurrency(totalExpected)}</span>
+              </span>
+            </div>
+          </div>
+        );
+      })()}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Revenue by plan */}

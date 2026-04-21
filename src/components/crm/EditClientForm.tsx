@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { updateClient } from "@/app/actions/clients";
-import { PLAN_LABELS, STATUS_LABELS, type Client } from "@/types";
+import { PLAN_LABELS, STATUS_LABELS, getPlanLabel, type Client } from "@/types";
 import { useRouter } from "next/navigation";
 import { Pencil, Save, X } from "lucide-react";
 
@@ -10,6 +10,12 @@ export default function EditClientForm({ client }: { client: Client }) {
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [planValue, setPlanValue] = useState(
+    Object.keys(PLAN_LABELS).includes(client.plan) ? client.plan : "__custom__"
+  );
+  const [customPlan, setCustomPlan] = useState(
+    Object.keys(PLAN_LABELS).includes(client.plan) ? "" : client.plan
+  );
   const router = useRouter();
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -17,6 +23,8 @@ export default function EditClientForm({ client }: { client: Client }) {
     setLoading(true);
     setError(null);
     const formData = new FormData(e.currentTarget);
+    const finalPlan = planValue === "__custom__" ? customPlan.trim() : planValue;
+    formData.set("plan", finalPlan);
     const result = await updateClient(client.id, formData);
     setLoading(false);
     if (result.error) { setError(result.error); return; }
@@ -36,7 +44,7 @@ export default function EditClientForm({ client }: { client: Client }) {
         <div className="space-y-2 text-sm">
           <Row label="טלפון" value={client.phone} />
           {client.email && <Row label="אימייל" value={client.email} />}
-          <Row label="מסלול" value={PLAN_LABELS[client.plan]} />
+          <Row label="מסלול" value={getPlanLabel(client.plan)} />
           <Row label="סטטוס" value={STATUS_LABELS[client.status]} />
           {client.start_date && <Row label="התחלה" value={new Date(client.start_date).toLocaleDateString("he-IL")} />}
           {client.weight_goal && <Row label='יעד משקל' value={`${client.weight_goal} ק"ג`} />}
@@ -67,9 +75,23 @@ export default function EditClientForm({ client }: { client: Client }) {
         </div>
         <div>
           <label className="text-xs text-gray-500">מסלול</label>
-          <select name="plan" defaultValue={client.plan} className="input mt-1">
+          <select
+            className="input mt-1"
+            value={planValue}
+            onChange={(e) => setPlanValue(e.target.value)}
+          >
             {Object.entries(PLAN_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+            <option value="__custom__">➕ מסלול אחר...</option>
           </select>
+          {planValue === "__custom__" && (
+            <input
+              className="input mt-1"
+              placeholder="שם המסלול"
+              value={customPlan}
+              onChange={(e) => setCustomPlan(e.target.value)}
+              required
+            />
+          )}
         </div>
         <div>
           <label className="text-xs text-gray-500">סטטוס</label>

@@ -2,7 +2,6 @@
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
-import { PLAN_PRICES } from "@/types";
 
 export async function addClient(formData: FormData) {
   const supabase = createAdminClient();
@@ -18,6 +17,71 @@ export async function addClient(formData: FormData) {
   });
   revalidatePath("/crm/clients");
   return { error: error?.message ?? null };
+}
+
+export async function addClientWithPayments(data: {
+  name: string;
+  phone: string;
+  email?: string;
+  plan: string;
+  status: string;
+  start_date?: string;
+  weight_goal?: number | null;
+  notes?: string;
+  add_payments: boolean;
+  total_months?: number;
+  monthly_amount?: number;
+}) {
+  const supabase = createAdminClient();
+
+  const { data: client, error } = await supabase
+    .from("clients")
+    .insert({
+      name: data.name,
+      phone: data.phone,
+      email: data.email || null,
+      plan: data.plan,
+      status: data.status,
+      start_date: data.start_date || null,
+      weight_goal: data.weight_goal || null,
+      notes: data.notes || null,
+      total_months: data.total_months || null,
+      monthly_amount: data.monthly_amount || null,
+    })
+    .select()
+    .single();
+
+  if (error || !client) {
+    return { error: error?.message ?? "שגיאה ביצירת מתאמן" };
+  }
+
+  if (
+    data.add_payments &&
+    data.start_date &&
+    data.total_months &&
+    data.total_months > 0 &&
+    data.monthly_amount &&
+    data.monthly_amount > 0
+  ) {
+    const startDate = new Date(data.start_date);
+    const payments = Array.from({ length: data.total_months }, (_, i) => ({
+      client_id: client.id,
+      amount: data.monthly_amount,
+      month: new Date(startDate.getFullYear(), startDate.getMonth() + i, startDate.getDate())
+        .toISOString()
+        .split("T")[0],
+      status: "unpaid",
+      notes: `חודש ${i + 1} מתוך ${data.total_months}`,
+    }));
+
+    const { error: payError } = await supabase.from("payments").insert(payments);
+    if (payError) console.error("[addClientWithPayments] payments insert:", payError);
+  }
+
+  revalidatePath("/crm/clients");
+  revalidatePath("/crm/payments");
+  revalidatePath("/crm");
+  return { error: null };
 }
 
 export async function updateClient(id: string, formData: FormData) {
