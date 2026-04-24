@@ -53,6 +53,16 @@ export default function AddLeadButton() {
                   <option value="other">אחר</option>
                 </select>
               </div>
+              <div className="flex gap-3">
+                <div className="flex-1">
+                  <label className="text-xs text-gray-500 mb-1 block">גיל</label>
+                  <input name="age" type="number" min="1" max="120" className="input" placeholder="28" />
+                </div>
+                <div className="flex-1">
+                  <label className="text-xs text-gray-500 mb-1 block">מטרה</label>
+                  <input name="goal" className="input" placeholder="חיטוב / מסה..." />
+                </div>
+              </div>
               <div>
                 <label className="text-xs text-gray-500 mb-1 block">הערות</label>
                 <textarea name="notes" rows={2} className="input resize-none" />

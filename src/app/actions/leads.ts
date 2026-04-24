@@ -9,12 +9,18 @@ export async function addLead(formData: FormData) {
   const name = formData.get("name") as string;
   const phone = formData.get("phone") as string;
 
+  const ageRaw = parseInt(formData.get("age") as string, 10);
+  const age = !isNaN(ageRaw) && ageRaw > 0 ? ageRaw : null;
+  const goal = (formData.get("goal") as string) || null;
+
   const { error } = await supabase.from("leads").insert({
     name,
     phone,
     source: formData.get("source"),
     notes: formData.get("notes") || null,
     status: "new",
+    age,
+    goal,
   });
 
   if (!error) {
@@ -51,7 +57,6 @@ export async function convertLead(leadId: string, formData: FormData) {
       plan: formData.get("plan"),
       status: "active",
       start_date: formData.get("start_date") || null,
-      lead_id: leadId,
     })
     .select()
     .single();
