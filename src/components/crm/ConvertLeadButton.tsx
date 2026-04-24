@@ -5,6 +5,7 @@ import { UserCheck, X } from "lucide-react";
 import { convertLead } from "@/app/actions/leads";
 import { PLAN_LABELS, type Lead } from "@/types";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 export default function ConvertLeadButton({ lead }: { lead: Lead }) {
   const [open, setOpen] = useState(false);
@@ -20,8 +21,12 @@ export default function ConvertLeadButton({ lead }: { lead: Lead }) {
     const result = await convertLead(lead.id, formData);
     setLoading(false);
     setOpen(false);
-    if (result.clientId) router.push(`/crm/clients/${result.clientId}`);
-    else router.refresh();
+    if (result.clientId) {
+      toast.success("✅ הליד הפך למתאמן בהצלחה!");
+      router.push("/crm/clients");
+    } else {
+      toast.error(result.error ?? "שגיאה בהמרת הליד");
+    }
   }
 
   return (

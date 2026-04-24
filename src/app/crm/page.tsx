@@ -5,6 +5,7 @@ import { formatCurrency } from "@/lib/utils";
 import { PLAN_PRICES, type Payment } from "@/types";
 import { Users, TrendingUp, UserPlus, AlertCircle } from "lucide-react";
 import Link from "next/link";
+import MonthNavigator from "@/components/crm/MonthNavigator";
 
 async function getDashboardStats() {
   const supabase = createClient();
@@ -45,11 +46,10 @@ async function getDashboardStats() {
   };
 }
 
-async function getMonthlyPayments() {
+async function getMonthlyPayments(year: number, month: number) {
   const supabase = createClient();
-  const now = new Date();
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
-  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split("T")[0];
+  const monthStart = new Date(year, month, 1).toISOString().split("T")[0];
+  const monthEnd = new Date(year, month + 1, 0).toISOString().split("T")[0];
   const { data } = await supabase
     .from("payments")
     .select("id, amount, status, month, client:clients(id, name)")
@@ -71,13 +71,25 @@ async function getUpcomingCalls() {
   return data ?? [];
 }
 
-const HEBREW_MONTHS = ["ינואר","פברואר","מרץ","אפריל","מאי","יוני","יולי","אוגוסט","ספטמבר","אוקטובר","נובמבר","דצמבר"];
+export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ month?: string }> }) {
+  const params = await searchParams;
+  const now = new Date();
 
-export default async function DashboardPage() {
+  let selectedYear = now.getFullYear();
+  let selectedMonth = now.getMonth(); // 0-indexed
+
+  if (params.month) {
+    const [y, m] = params.month.split("-").map(Number);
+    if (!isNaN(y) && !isNaN(m) && m >= 1 && m <= 12) {
+      selectedYear = y;
+      selectedMonth = m - 1;
+    }
+  }
+
   const [stats, upcomingCalls, monthlyPayments] = await Promise.all([
     getDashboardStats(),
     getUpcomingCalls(),
-    getMonthlyPayments(),
+    getMonthlyPayments(selectedYear, selectedMonth),
   ]);
 
   const statCards = [
@@ -141,14 +153,15 @@ export default async function DashboardPage() {
 
       {/* Monthly payments */}
       {(() => {
-        const now = new Date();
-        const monthLabel = `${HEBREW_MONTHS[now.getMonth()]} ${now.getFullYear()}`;
         const totalExpected = monthlyPayments.reduce((s, p) => s + p.amount, 0);
         const totalCollected = monthlyPayments.filter((p) => p.status === "paid").reduce((s, p) => s + p.amount, 0);
         return (
           <div className="card">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-gray-900">תשלומים החודש — {monthLabel}</h3>
+            <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+              <div className="flex items-center gap-3">
+                <h3 className="font-semibold text-gray-900">תשלומים</h3>
+                <MonthNavigator year={selectedYear} month={selectedMonth} />
+              </div>
               <Link href="/crm/payments" className="text-sm text-green-600 hover:underline">כל התשלומים</Link>
             </div>
             {monthlyPayments.length === 0 ? (
