@@ -93,7 +93,7 @@ async function fetchLeadData(leadgenId: string): Promise<{ name: string; phone: 
   console.log("[FB Webhook] Field names:", fields.map(f => f.name).join(", "));
 
   const get = (keys: string[]) =>
-    fields.find((f) => keys.includes(f.name))?.values?.[0] ?? "";
+    fields.find((f) => keys.includes(f.name.replace(/\?/g, "")))?.values?.[0] ?? "";
 
   const firstName = get(["first_name", "שם_פרטי", "שם פרטי", "שם-פרטי"]);
   const lastName = get(["last_name", "שם_משפחה", "שם משפחה", "שם-משפחה"]);
