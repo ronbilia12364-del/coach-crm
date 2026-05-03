@@ -113,6 +113,10 @@ export interface Payment {
   notes?: string;
   paid_at?: string;
   created_at: string;
+  is_recurring?: boolean;
+  recurring_group_id?: string | null;
+  recurring_total_months?: number | null;
+  recurring_month_number?: number | null;
 }
 
 export interface Call {

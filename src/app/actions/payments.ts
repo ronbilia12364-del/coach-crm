@@ -2,6 +2,7 @@
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
+import { addMonths, startOfMonth, format } from "date-fns";
 
 export async function addPayment(clientId: string, formData: FormData) {
   const supabase = createAdminClient();
@@ -15,6 +16,63 @@ export async function addPayment(clientId: string, formData: FormData) {
   });
   revalidatePath(`/crm/clients/${clientId}`);
   revalidatePath("/crm/payments");
+  return { error: error?.message ?? null };
+}
+
+export async function addRecurringPayments(clientId: string, formData: FormData) {
+  const supabase = createAdminClient();
+
+  const monthlyAmount = Number(formData.get("monthly_amount"));
+  const totalMonths = Number(formData.get("total_months"));
+  const startMonth = formData.get("month") as string;
+  const method = (formData.get("method") as string) || null;
+  const notes = (formData.get("notes") as string) || null;
+
+  if (!monthlyAmount || !totalMonths || !startMonth) {
+    return { error: "נא למלא את כל השדות הנדרשים" };
+  }
+
+  const groupId = crypto.randomUUID();
+  const startDate = startOfMonth(new Date(startMonth));
+
+  const payments = Array.from({ length: totalMonths }, (_, i) => {
+    const monthDate = addMonths(startDate, i);
+    return {
+      client_id: clientId,
+      amount: monthlyAmount,
+      month: format(monthDate, "yyyy-MM-dd"),
+      status: "unpaid",
+      method,
+      notes,
+      is_recurring: true,
+      recurring_group_id: groupId,
+      recurring_total_months: totalMonths,
+      recurring_month_number: i + 1,
+    };
+  });
+
+  const { error } = await supabase.from("payments").insert(payments);
+  revalidatePath(`/crm/clients/${clientId}`);
+  revalidatePath("/crm/payments");
+  return { error: error?.message ?? null };
+}
+
+export async function deletePayment(paymentId: string) {
+  const supabase = createAdminClient();
+  const { error } = await supabase.from("payments").delete().eq("id", paymentId);
+  revalidatePath("/crm/payments");
+  revalidatePath("/crm/clients");
+  return { error: error?.message ?? null };
+}
+
+export async function deleteRecurringGroup(groupId: string) {
+  const supabase = createAdminClient();
+  const { error } = await supabase
+    .from("payments")
+    .delete()
+    .eq("recurring_group_id", groupId);
+  revalidatePath("/crm/payments");
+  revalidatePath("/crm/clients");
   return { error: error?.message ?? null };
 }
 

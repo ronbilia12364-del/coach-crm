@@ -5,7 +5,7 @@ import { formatCurrency, formatDate } from "@/lib/utils";
 import { PAYMENT_METHOD_LABELS, type Payment, type PaymentStatus } from "@/types";
 import PaymentStatusBadge from "@/components/crm/PaymentStatusBadge";
 import MarkPaidButton from "@/components/crm/MarkPaidButton";
-import DeleteButton from "@/components/ui/delete-button";
+import PaymentDeleteButton from "@/components/crm/PaymentDeleteButton";
 import Link from "next/link";
 
 export default async function PaymentsPage() {
@@ -76,12 +76,19 @@ export default async function PaymentsPage() {
               {payments.map((payment) => (
                 <tr key={payment.id} className="hover:bg-gray-50">
                   <td className="px-6 py-3">
-                    <Link
-                      href={`/crm/clients/${payment.client?.id}`}
-                      className="hover:text-green-600 font-medium"
-                    >
-                      {payment.client?.name}
-                    </Link>
+                    <div className="flex items-center gap-2">
+                      <Link
+                        href={`/crm/clients/${payment.client?.id}`}
+                        className="hover:text-green-600 font-medium"
+                      >
+                        {payment.client?.name}
+                      </Link>
+                      {payment.is_recurring && (
+                        <span className="text-xs bg-blue-50 text-blue-600 border border-blue-100 rounded-full px-2 py-0.5 whitespace-nowrap">
+                          🔁 ה"ק
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="px-6 py-3 text-gray-600">{formatDate(payment.month)}</td>
                   <td className="px-6 py-3 font-medium">{formatCurrency(payment.amount)}</td>
@@ -96,10 +103,11 @@ export default async function PaymentsPage() {
                   <td className="px-6 py-3">
                     <div className="flex items-center gap-2">
                       {payment.status === "unpaid" && <MarkPaidButton paymentId={payment.id} />}
-                      <DeleteButton
-                        itemId={payment.id}
-                        tableName="payments"
-                        itemLabel={`תשלום של ${payment.client?.name}`}
+                      <PaymentDeleteButton
+                        paymentId={payment.id}
+                        clientName={payment.client?.name ?? ""}
+                        recurringGroupId={payment.recurring_group_id}
+                        recurringTotalMonths={payment.recurring_total_months}
                       />
                     </div>
                   </td>
@@ -115,12 +123,19 @@ export default async function PaymentsPage() {
             <div key={payment.id} className="card space-y-3">
               <div className="flex items-start justify-between">
                 <div>
-                  <Link
-                    href={`/crm/clients/${payment.client?.id}`}
-                    className="font-semibold text-base hover:text-green-600"
-                  >
-                    {payment.client?.name}
-                  </Link>
+                  <div className="flex items-center gap-2">
+                    <Link
+                      href={`/crm/clients/${payment.client?.id}`}
+                      className="font-semibold text-base hover:text-green-600"
+                    >
+                      {payment.client?.name}
+                    </Link>
+                    {payment.is_recurring && (
+                      <span className="text-xs bg-blue-50 text-blue-600 border border-blue-100 rounded-full px-2 py-0.5 whitespace-nowrap">
+                        🔁 ה"ק
+                      </span>
+                    )}
+                  </div>
                   <p className="text-sm text-gray-400 mt-0.5">{formatDate(payment.month)}</p>
                 </div>
                 <PaymentStatusBadge status={payment.status} />
@@ -135,10 +150,11 @@ export default async function PaymentsPage() {
               </div>
               <div className="flex items-center gap-2 pt-1">
                 {payment.status === "unpaid" && <MarkPaidButton paymentId={payment.id} />}
-                <DeleteButton
-                  itemId={payment.id}
-                  tableName="payments"
-                  itemLabel={`תשלום של ${payment.client?.name}`}
+                <PaymentDeleteButton
+                  paymentId={payment.id}
+                  clientName={payment.client?.name ?? ""}
+                  recurringGroupId={payment.recurring_group_id}
+                  recurringTotalMonths={payment.recurring_total_months}
                 />
               </div>
             </div>
@@ -153,21 +169,29 @@ function PaymentRow({ payment }: { payment: Payment & { client: any } }) {
   return (
     <div className="card flex justify-between items-center py-3">
       <div>
-        <Link
-          href={`/crm/clients/${payment.client?.id}`}
-          className="font-medium hover:text-green-600"
-        >
-          {payment.client?.name}
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            href={`/crm/clients/${payment.client?.id}`}
+            className="font-medium hover:text-green-600"
+          >
+            {payment.client?.name}
+          </Link>
+          {payment.is_recurring && (
+            <span className="text-xs bg-blue-50 text-blue-600 border border-blue-100 rounded-full px-2 py-0.5 whitespace-nowrap">
+              🔁 ה"ק
+            </span>
+          )}
+        </div>
         <p className="text-xs text-gray-400">{formatDate(payment.month)}</p>
       </div>
       <div className="flex items-center gap-2">
         <span className="font-bold">{formatCurrency(payment.amount)}</span>
         <MarkPaidButton paymentId={payment.id} />
-        <DeleteButton
-          itemId={payment.id}
-          tableName="payments"
-          itemLabel={`תשלום של ${payment.client?.name}`}
+        <PaymentDeleteButton
+          paymentId={payment.id}
+          clientName={payment.client?.name ?? ""}
+          recurringGroupId={payment.recurring_group_id}
+          recurringTotalMonths={payment.recurring_total_months}
         />
       </div>
     </div>
