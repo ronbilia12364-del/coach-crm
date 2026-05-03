@@ -2,7 +2,7 @@
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
-import { addMonths, startOfMonth, format } from "date-fns";
+import { addMonths, format } from "date-fns";
 
 export async function addPayment(clientId: string, formData: FormData) {
   const supabase = createAdminClient();
@@ -33,7 +33,7 @@ export async function addRecurringPayments(clientId: string, formData: FormData)
   }
 
   const groupId = crypto.randomUUID();
-  const startDate = startOfMonth(new Date(startMonth));
+  const startDate = new Date(startMonth);
 
   const payments = Array.from({ length: totalMonths }, (_, i) => {
     const monthDate = addMonths(startDate, i);
@@ -102,8 +102,7 @@ export async function updateRecurringGroup(
 
   if (fetchError) return { error: fetchError.message };
 
-  const thisMonth = startOfMonth(new Date(data.month));
-  const newFirstMonth = addMonths(thisMonth, -(recurringMonthNumber - 1));
+  const newFirstMonth = addMonths(new Date(data.month), -(recurringMonthNumber - 1));
 
   await Promise.all(
     (groupPayments ?? []).map((p) => {

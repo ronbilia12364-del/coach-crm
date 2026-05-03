@@ -9,9 +9,9 @@ const HEBREW_MONTHS = [
   "יולי", "אוגוסט", "ספטמבר", "אוקטובר", "נובמבר", "דצמבר",
 ];
 
-function formatMonthHebrew(monthStr: string) {
-  const d = new Date(monthStr);
-  return `${HEBREW_MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+function formatDateHebrew(dateStr: string) {
+  const d = new Date(dateStr);
+  return `${d.getUTCDate()} ${HEBREW_MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
 }
 
 function statusIcon(payment: Payment) {
@@ -79,7 +79,7 @@ export default function ClientPaymentsTooltip({ clientName, clientId: _clientId,
             <div className="space-y-1 max-h-44 overflow-y-auto">
               {sorted.map((p) => (
                 <div key={p.id} className="flex items-center justify-between gap-2">
-                  <span className="text-gray-600 truncate">{formatMonthHebrew(p.month)}</span>
+                  <span className="text-gray-600 truncate">{formatDateHebrew(p.month)}</span>
                   <span className="flex items-center gap-1 whitespace-nowrap flex-shrink-0">
                     <span className="font-medium text-gray-700">{formatCurrency(p.amount)}</span>
                     <span>{statusIcon(p)}</span>

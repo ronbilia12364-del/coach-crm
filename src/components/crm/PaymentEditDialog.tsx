@@ -21,14 +21,14 @@ export default function PaymentEditDialog({ payment, clientName }: Props) {
   const isRecurring = !!payment.recurring_group_id;
 
   const [amount, setAmount] = useState(String(payment.amount));
-  const [month, setMonth] = useState(payment.month.slice(0, 7));
+  const [month, setMonth] = useState(payment.month.slice(0, 10));
   const [status, setStatus] = useState<PaymentStatus>(payment.status);
   const [method, setMethod] = useState(payment.method ?? "");
   const [notes, setNotes] = useState(payment.notes ?? "");
 
   function openDialog() {
     setAmount(String(payment.amount));
-    setMonth(payment.month.slice(0, 7));
+    setMonth(payment.month.slice(0, 10));
     setStatus(payment.status);
     setMethod(payment.method ?? "");
     setNotes(payment.notes ?? "");
@@ -42,7 +42,7 @@ export default function PaymentEditDialog({ payment, clientName }: Props) {
 
     const data = {
       amount: Number(amount),
-      month: month + "-01",
+      month,
       status,
       method: method || null,
       notes: notes || null,
@@ -153,10 +153,10 @@ export default function PaymentEditDialog({ payment, clientName }: Props) {
 
               <div>
                 <label className="text-xs text-gray-500 mb-1 block">
-                  חודש{editMode === "group" ? " (חודש זה — שאר יחושבו בהתאם)" : ""}
+                  תאריך{editMode === "group" ? " (תאריך זה — שאר יחושבו בהתאם)" : ""}
                 </label>
                 <input
-                  type="month"
+                  type="date"
                   value={month}
                   onChange={(e) => setMonth(e.target.value)}
                   className="input w-full"

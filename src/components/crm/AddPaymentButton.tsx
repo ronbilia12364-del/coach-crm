@@ -25,7 +25,7 @@ export default function AddPaymentButton({ clientId }: { clientId: string }) {
   const [startMonth, setStartMonth] = useState(new Date().toISOString().slice(0, 7) + "-01");
   const router = useRouter();
 
-  const thisMonth = new Date().toISOString().slice(0, 7) + "-01";
+  const thisMonth = new Date().toISOString().slice(0, 10);
 
   const recurringPreview = useMemo(() => {
     if (!isRecurring || !startMonth) return [];
@@ -115,7 +115,7 @@ export default function AddPaymentButton({ clientId }: { clientId: string }) {
               {/* Month */}
               <div>
                 <label className="text-xs text-gray-500 mb-1 block">
-                  {isRecurring ? "חודש התחלה *" : "חודש *"}
+                  {isRecurring ? "תאריך התחלה *" : "תאריך תשלום *"}
                 </label>
                 <input
                   name="month"
