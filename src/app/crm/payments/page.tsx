@@ -6,7 +6,8 @@ import { PAYMENT_METHOD_LABELS, type Payment, type PaymentStatus } from "@/types
 import PaymentStatusBadge from "@/components/crm/PaymentStatusBadge";
 import MarkPaidButton from "@/components/crm/MarkPaidButton";
 import PaymentDeleteButton from "@/components/crm/PaymentDeleteButton";
-import Link from "next/link";
+import PaymentEditDialog from "@/components/crm/PaymentEditDialog";
+import ClientPaymentsTooltip from "@/components/crm/ClientPaymentsTooltip";
 
 export default async function PaymentsPage() {
   const supabase = createAdminClient();
@@ -20,6 +21,11 @@ export default async function PaymentsPage() {
 
   const totalPaid = payments.filter((p) => p.status === "paid").reduce((s, p) => s + p.amount, 0);
   const totalUnpaid = payments.filter((p) => p.status === "unpaid").reduce((s, p) => s + p.amount, 0);
+
+  const paymentsByClient = payments.reduce<Record<string, Payment[]>>((acc, p) => {
+    (acc[p.client_id] ??= []).push(p);
+    return acc;
+  }, {});
 
   return (
     <div className="space-y-6">
@@ -47,7 +53,11 @@ export default async function PaymentsPage() {
         </h3>
         <div className="space-y-2">
           {payments.filter((p) => p.status === "unpaid").map((payment) => (
-            <PaymentRow key={payment.id} payment={payment} />
+            <PaymentRow
+              key={payment.id}
+              payment={payment}
+              clientPayments={paymentsByClient[payment.client_id] ?? []}
+            />
           ))}
           {payments.filter((p) => p.status === "unpaid").length === 0 && (
             <div className="card text-center text-green-600 font-medium">✅ כל התשלומים שולמו!</div>
@@ -77,15 +87,15 @@ export default async function PaymentsPage() {
                 <tr key={payment.id} className="hover:bg-gray-50">
                   <td className="px-6 py-3">
                     <div className="flex items-center gap-2">
-                      <Link
+                      <ClientPaymentsTooltip
+                        clientName={payment.client?.name ?? ""}
+                        clientId={payment.client_id}
                         href={`/crm/clients/${payment.client?.id}`}
-                        className="hover:text-green-600 font-medium"
-                      >
-                        {payment.client?.name}
-                      </Link>
+                        clientPayments={paymentsByClient[payment.client_id] ?? []}
+                      />
                       {payment.is_recurring && (
                         <span className="text-xs bg-blue-50 text-blue-600 border border-blue-100 rounded-full px-2 py-0.5 whitespace-nowrap">
-                          🔁 ה"ק
+                          🔁 ה&quot;ק
                         </span>
                       )}
                     </div>
@@ -101,8 +111,12 @@ export default async function PaymentsPage() {
                     <PaymentStatusBadge status={payment.status} />
                   </td>
                   <td className="px-6 py-3">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1">
                       {payment.status === "unpaid" && <MarkPaidButton paymentId={payment.id} />}
+                      <PaymentEditDialog
+                        payment={payment}
+                        clientName={payment.client?.name ?? ""}
+                      />
                       <PaymentDeleteButton
                         paymentId={payment.id}
                         clientName={payment.client?.name ?? ""}
@@ -124,15 +138,15 @@ export default async function PaymentsPage() {
               <div className="flex items-start justify-between">
                 <div>
                   <div className="flex items-center gap-2">
-                    <Link
+                    <ClientPaymentsTooltip
+                      clientName={payment.client?.name ?? ""}
+                      clientId={payment.client_id}
                       href={`/crm/clients/${payment.client?.id}`}
-                      className="font-semibold text-base hover:text-green-600"
-                    >
-                      {payment.client?.name}
-                    </Link>
+                      clientPayments={paymentsByClient[payment.client_id] ?? []}
+                    />
                     {payment.is_recurring && (
                       <span className="text-xs bg-blue-50 text-blue-600 border border-blue-100 rounded-full px-2 py-0.5 whitespace-nowrap">
-                        🔁 ה"ק
+                        🔁 ה&quot;ק
                       </span>
                     )}
                   </div>
@@ -150,6 +164,10 @@ export default async function PaymentsPage() {
               </div>
               <div className="flex items-center gap-2 pt-1">
                 {payment.status === "unpaid" && <MarkPaidButton paymentId={payment.id} />}
+                <PaymentEditDialog
+                  payment={payment}
+                  clientName={payment.client?.name ?? ""}
+                />
                 <PaymentDeleteButton
                   paymentId={payment.id}
                   clientName={payment.client?.name ?? ""}
@@ -165,28 +183,38 @@ export default async function PaymentsPage() {
   );
 }
 
-function PaymentRow({ payment }: { payment: Payment & { client: any } }) {
+function PaymentRow({
+  payment,
+  clientPayments,
+}: {
+  payment: Payment & { client: any };
+  clientPayments: Payment[];
+}) {
   return (
     <div className="card flex justify-between items-center py-3">
       <div>
         <div className="flex items-center gap-2">
-          <Link
+          <ClientPaymentsTooltip
+            clientName={payment.client?.name ?? ""}
+            clientId={payment.client_id}
             href={`/crm/clients/${payment.client?.id}`}
-            className="font-medium hover:text-green-600"
-          >
-            {payment.client?.name}
-          </Link>
+            clientPayments={clientPayments}
+          />
           {payment.is_recurring && (
             <span className="text-xs bg-blue-50 text-blue-600 border border-blue-100 rounded-full px-2 py-0.5 whitespace-nowrap">
-              🔁 ה"ק
+              🔁 ה&quot;ק
             </span>
           )}
         </div>
         <p className="text-xs text-gray-400">{formatDate(payment.month)}</p>
       </div>
-      <div className="flex items-center gap-2">
-        <span className="font-bold">{formatCurrency(payment.amount)}</span>
+      <div className="flex items-center gap-1">
+        <span className="font-bold ml-1">{formatCurrency(payment.amount)}</span>
         <MarkPaidButton paymentId={payment.id} />
+        <PaymentEditDialog
+          payment={payment}
+          clientName={payment.client?.name ?? ""}
+        />
         <PaymentDeleteButton
           paymentId={payment.id}
           clientName={payment.client?.name ?? ""}

@@ -76,6 +76,51 @@ export async function deleteRecurringGroup(groupId: string) {
   return { error: error?.message ?? null };
 }
 
+export async function updatePayment(
+  paymentId: string,
+  data: { amount: number; month: string; status: string; method: string | null; notes: string | null }
+) {
+  const supabase = createAdminClient();
+  const { error } = await supabase.from("payments").update(data).eq("id", paymentId);
+  revalidatePath("/crm/payments");
+  revalidatePath("/crm/clients");
+  return { error: error?.message ?? null };
+}
+
+export async function updateRecurringGroup(
+  groupId: string,
+  recurringMonthNumber: number,
+  data: { amount: number; month: string; status: string; method: string | null; notes: string | null }
+) {
+  const supabase = createAdminClient();
+
+  const { data: groupPayments, error: fetchError } = await supabase
+    .from("payments")
+    .select("id, recurring_month_number")
+    .eq("recurring_group_id", groupId)
+    .order("recurring_month_number", { ascending: true });
+
+  if (fetchError) return { error: fetchError.message };
+
+  const thisMonth = startOfMonth(new Date(data.month));
+  const newFirstMonth = addMonths(thisMonth, -(recurringMonthNumber - 1));
+
+  await Promise.all(
+    (groupPayments ?? []).map((p) => {
+      const idx = (p.recurring_month_number ?? 1) - 1;
+      const newMonth = format(addMonths(newFirstMonth, idx), "yyyy-MM-dd");
+      return supabase
+        .from("payments")
+        .update({ amount: data.amount, month: newMonth, status: data.status, method: data.method, notes: data.notes })
+        .eq("id", p.id);
+    })
+  );
+
+  revalidatePath("/crm/payments");
+  revalidatePath("/crm/clients");
+  return { error: null };
+}
+
 export async function markPaid(paymentId: string) {
   const supabase = createAdminClient();
   const { error } = await supabase
