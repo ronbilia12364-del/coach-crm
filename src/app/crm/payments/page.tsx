@@ -2,12 +2,12 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import { PAYMENT_METHOD_LABELS, type Payment, type PaymentStatus } from "@/types";
-import PaymentStatusBadge from "@/components/crm/PaymentStatusBadge";
+import { type Payment } from "@/types";
 import MarkPaidButton from "@/components/crm/MarkPaidButton";
 import PaymentDeleteButton from "@/components/crm/PaymentDeleteButton";
 import PaymentEditDialog from "@/components/crm/PaymentEditDialog";
 import ClientPaymentsTooltip from "@/components/crm/ClientPaymentsTooltip";
+import ClientGroupedPayments, { type ClientGroup } from "@/components/crm/ClientGroupedPayments";
 
 export default async function PaymentsPage() {
   const supabase = createAdminClient();
@@ -22,10 +22,48 @@ export default async function PaymentsPage() {
   const totalPaid = payments.filter((p) => p.status === "paid").reduce((s, p) => s + p.amount, 0);
   const totalUnpaid = payments.filter((p) => p.status === "unpaid").reduce((s, p) => s + p.amount, 0);
 
-  const paymentsByClient = payments.reduce<Record<string, Payment[]>>((acc, p) => {
-    (acc[p.client_id] ??= []).push(p);
-    return acc;
-  }, {});
+  // Group payments by client
+  const paymentsByClient = payments.reduce<Record<string, (Payment & { client: any })[]>>(
+    (acc, p) => { (acc[p.client_id] ??= []).push(p); return acc; },
+    {}
+  );
+
+  // Build groups in the order clients first appear (most recent payment first)
+  const seenClients = new Set<string>();
+  const clientOrder: string[] = [];
+  for (const p of payments) {
+    if (!seenClients.has(p.client_id)) {
+      seenClients.add(p.client_id);
+      clientOrder.push(p.client_id);
+    }
+  }
+
+  const clientGroups: ClientGroup[] = clientOrder
+    .map((clientId) => {
+      const cp = paymentsByClient[clientId] ?? [];
+      const clientInfo = cp[0]?.client;
+      const paidCount = cp.filter((p) => p.status === "paid").length;
+      const totalPaidAmt = cp.filter((p) => p.status === "paid").reduce((s, p) => s + p.amount, 0);
+      const totalUnpaidAmt = cp.filter((p) => p.status !== "paid").reduce((s, p) => s + p.amount, 0);
+      return {
+        clientId,
+        clientName: clientInfo?.name ?? "",
+        clientHref: `/crm/clients/${clientInfo?.id}`,
+        payments: [...cp].sort((a, b) => a.month.localeCompare(b.month)),
+        hasRecurring: cp.some((p) => p.is_recurring),
+        paidCount,
+        totalPaid: totalPaidAmt,
+        totalUnpaid: totalUnpaidAmt,
+      };
+    })
+    .sort((a, b) => {
+      // Clients with unpaid payments first, then alphabetically
+      if (a.totalUnpaid > 0 && b.totalUnpaid === 0) return -1;
+      if (a.totalUnpaid === 0 && b.totalUnpaid > 0) return 1;
+      return a.clientName.localeCompare(b.clientName, "he");
+    });
+
+  const unpaidPayments = payments.filter((p) => p.status === "unpaid");
 
   return (
     <div className="space-y-6">
@@ -46,138 +84,31 @@ export default async function PaymentsPage() {
         </div>
       </div>
 
-      {/* Unpaid first */}
+      {/* Unpaid section — individual rows */}
       <div>
         <h3 className="font-semibold text-red-600 mb-3">
-          ממתין לתשלום ({payments.filter((p) => p.status === "unpaid").length})
+          ממתין לתשלום ({unpaidPayments.length})
         </h3>
         <div className="space-y-2">
-          {payments.filter((p) => p.status === "unpaid").map((payment) => (
+          {unpaidPayments.map((payment) => (
             <PaymentRow
               key={payment.id}
               payment={payment}
               clientPayments={paymentsByClient[payment.client_id] ?? []}
             />
           ))}
-          {payments.filter((p) => p.status === "unpaid").length === 0 && (
+          {unpaidPayments.length === 0 && (
             <div className="card text-center text-green-600 font-medium">✅ כל התשלומים שולמו!</div>
           )}
         </div>
       </div>
 
-      {/* All payments */}
+      {/* All payments — grouped by client */}
       <div>
-        <h3 className="font-semibold text-gray-700 mb-3">כל התשלומים</h3>
-
-        {/* Desktop table */}
-        <div className="hidden md:block card p-0 overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-100">
-              <tr>
-                <th className="text-right px-6 py-3 text-gray-500 font-medium">מתאמן</th>
-                <th className="text-right px-6 py-3 text-gray-500 font-medium">חודש</th>
-                <th className="text-right px-6 py-3 text-gray-500 font-medium">סכום</th>
-                <th className="text-right px-6 py-3 text-gray-500 font-medium">אמצעי</th>
-                <th className="text-right px-6 py-3 text-gray-500 font-medium">סטטוס</th>
-                <th className="text-right px-6 py-3 text-gray-500 font-medium">פעולות</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {payments.map((payment) => (
-                <tr key={payment.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-3">
-                    <div className="flex items-center gap-2">
-                      <ClientPaymentsTooltip
-                        clientName={payment.client?.name ?? ""}
-                        clientId={payment.client_id}
-                        href={`/crm/clients/${payment.client?.id}`}
-                        clientPayments={paymentsByClient[payment.client_id] ?? []}
-                      />
-                      {payment.is_recurring && (
-                        <span className="text-xs bg-blue-50 text-blue-600 border border-blue-100 rounded-full px-2 py-0.5 whitespace-nowrap">
-                          🔁 ה&quot;ק
-                        </span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-6 py-3 text-gray-600">{formatDate(payment.month)}</td>
-                  <td className="px-6 py-3 font-medium">{formatCurrency(payment.amount)}</td>
-                  <td className="px-6 py-3 text-gray-500">
-                    {payment.method
-                      ? PAYMENT_METHOD_LABELS[payment.method as keyof typeof PAYMENT_METHOD_LABELS]
-                      : "—"}
-                  </td>
-                  <td className="px-6 py-3">
-                    <PaymentStatusBadge status={payment.status} />
-                  </td>
-                  <td className="px-6 py-3">
-                    <div className="flex items-center gap-1">
-                      {payment.status === "unpaid" && <MarkPaidButton paymentId={payment.id} />}
-                      <PaymentEditDialog
-                        payment={payment}
-                        clientName={payment.client?.name ?? ""}
-                      />
-                      <PaymentDeleteButton
-                        paymentId={payment.id}
-                        clientName={payment.client?.name ?? ""}
-                        recurringGroupId={payment.recurring_group_id}
-                        recurringTotalMonths={payment.recurring_total_months}
-                      />
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Mobile cards */}
-        <div className="md:hidden space-y-3">
-          {payments.map((payment) => (
-            <div key={payment.id} className="card space-y-3">
-              <div className="flex items-start justify-between">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <ClientPaymentsTooltip
-                      clientName={payment.client?.name ?? ""}
-                      clientId={payment.client_id}
-                      href={`/crm/clients/${payment.client?.id}`}
-                      clientPayments={paymentsByClient[payment.client_id] ?? []}
-                    />
-                    {payment.is_recurring && (
-                      <span className="text-xs bg-blue-50 text-blue-600 border border-blue-100 rounded-full px-2 py-0.5 whitespace-nowrap">
-                        🔁 ה&quot;ק
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-sm text-gray-400 mt-0.5">{formatDate(payment.month)}</p>
-                </div>
-                <PaymentStatusBadge status={payment.status} />
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="text-sm text-gray-500">
-                  {payment.method
-                    ? PAYMENT_METHOD_LABELS[payment.method as keyof typeof PAYMENT_METHOD_LABELS]
-                    : "—"}
-                </div>
-                <span className="font-bold text-base">{formatCurrency(payment.amount)}</span>
-              </div>
-              <div className="flex items-center gap-2 pt-1">
-                {payment.status === "unpaid" && <MarkPaidButton paymentId={payment.id} />}
-                <PaymentEditDialog
-                  payment={payment}
-                  clientName={payment.client?.name ?? ""}
-                />
-                <PaymentDeleteButton
-                  paymentId={payment.id}
-                  clientName={payment.client?.name ?? ""}
-                  recurringGroupId={payment.recurring_group_id}
-                  recurringTotalMonths={payment.recurring_total_months}
-                />
-              </div>
-            </div>
-          ))}
-        </div>
+        <h3 className="font-semibold text-gray-700 mb-3">
+          כל התשלומים ({clientGroups.length} לקוחות)
+        </h3>
+        <ClientGroupedPayments groups={clientGroups} />
       </div>
     </div>
   );
@@ -211,10 +142,7 @@ function PaymentRow({
       <div className="flex items-center gap-1">
         <span className="font-bold ml-1">{formatCurrency(payment.amount)}</span>
         <MarkPaidButton paymentId={payment.id} />
-        <PaymentEditDialog
-          payment={payment}
-          clientName={payment.client?.name ?? ""}
-        />
+        <PaymentEditDialog payment={payment} clientName={payment.client?.name ?? ""} />
         <PaymentDeleteButton
           paymentId={payment.id}
           clientName={payment.client?.name ?? ""}
